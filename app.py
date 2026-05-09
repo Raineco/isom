@@ -16,7 +16,7 @@ def load_img2text_model():
 @st.cache_resource
 def load_story_model():
     """Load the Hugging Face story generation model once."""
-    return pipeline("text-generation", model="pranavpsv/genre-story-generator-v2")
+    return pipeline("text-generation", model="roneneldan/TinyStories-Instruct-33M")
 
 
 @st.cache_resource
@@ -33,45 +33,13 @@ def img2text(image):
     return text
 
 
-def trim_story(story, max_words=100):
-    """Keep the story close to the assignment's 50-100 word target."""
-    words = story.split()
-
-    if len(words) <= max_words:
-        return story.strip()
-
-    trimmed_story = " ".join(words[:max_words]).strip()
-
-    # Add a simple ending mark if the trim cuts the story in the middle.
-    if trimmed_story[-1] not in ".!?":
-        trimmed_story += "..."
-
-    return trimmed_story
-
-
-def make_story_short_enough(story, scenario):
-    """Clean the generated story and keep it around 50-100 words."""
-    story = " ".join(story.replace("\n", " ").split())
-
-    # If the model gives a very short answer, add a simple ending so the final
-    # result still feels like a complete short story.
-    if len(story.split()) < 50:
-        story += (
-            f" Inspired by the scene of {scenario}, the moment became a gentle "
-            "adventure. The character noticed small details, felt curious, and "
-            "learned that even an ordinary picture can begin a memorable story."
-        )
-
-    return trim_story(story, max_words=100)
-
-
 def text2story(scenario):
     """Generate a story from the image caption."""
     story_generator = load_story_model()
 
     # Give the model clear instructions instead of passing only the raw caption.
     prompt = (
-        "Write a short, simple, and coherent children's story in 50 to 100 words. "
+        "Write a short, simple, and coherent children's story in 50 to 150 words. "
         "The story should be based on this scene: " + scenario + ". "
         "Do not repeat the same words too often. "
         "Do not create complicated family relationships. "
@@ -81,17 +49,20 @@ def text2story(scenario):
     # These settings help reduce repeated phrases in the generated story.
     story_result = story_generator(
         prompt,
-        max_new_tokens=120,
+        max_new_tokens=180,
         do_sample=True,
         temperature=0.7,
         top_p=0.9,
         repetition_penalty=1.2,
         no_repeat_ngram_size=3,
+        return_full_text=False,
+        pad_token_id=story_generator.tokenizer.eos_token_id,
     )
 
-    # Remove the prompt if the model includes it in the returned text.
-    story = story_result[0]["generated_text"].replace(prompt, "").strip()
-    return make_story_short_enough(story, scenario)
+    # Clean extra line breaks from the generated story.
+    story = story_result[0]["generated_text"].strip()
+    story = " ".join(story.replace("\n", " ").split())
+    return story
 
 
 def text2audio(story_text):
