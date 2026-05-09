@@ -68,7 +68,29 @@ def make_story_short_enough(story, scenario):
 def text2story(scenario):
     """Generate a story from the image caption."""
     story_generator = load_story_model()
-    story = story_generator(scenario)[0]["generated_text"]
+
+    # Give the model clear instructions instead of passing only the raw caption.
+    prompt = (
+        "Write a short, simple, and coherent children's story in 50 to 100 words. "
+        "The story should be based on this scene: " + scenario + ". "
+        "Do not repeat the same words too often. "
+        "Do not create complicated family relationships. "
+        "Story:"
+    )
+
+    # These settings help reduce repeated phrases in the generated story.
+    story_result = story_generator(
+        prompt,
+        max_new_tokens=120,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9,
+        repetition_penalty=1.2,
+        no_repeat_ngram_size=3,
+    )
+
+    # Remove the prompt if the model includes it in the returned text.
+    story = story_result[0]["generated_text"].replace(prompt, "").strip()
     return make_story_short_enough(story, scenario)
 
 
