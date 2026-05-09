@@ -15,8 +15,8 @@ def load_img2text_model():
 
 @st.cache_resource
 def load_story_model():
-    """Load a small Hugging Face text-generation model for story writing."""
-    return pipeline("text-generation", model="distilgpt2")
+    """Load the Hugging Face story generation model once."""
+    return pipeline("text-generation", model="pranavpsv/genre-story-generator-v2")
 
 
 @st.cache_resource
@@ -66,26 +66,9 @@ def make_story_short_enough(story, scenario):
 
 
 def text2story(scenario):
-    """Generate a short story from the image caption."""
-    story_pipe = load_story_model()
-
-    prompt = (
-        "Write a simple, coherent short story of about 70 words based on this "
-        f"image caption: {scenario}\nStory:"
-    )
-
-    story_results = story_pipe(
-        prompt,
-        max_new_tokens=120,
-        do_sample=True,
-        temperature=0.8,
-        top_p=0.95,
-        num_return_sequences=1,
-        return_full_text=False,
-        pad_token_id=story_pipe.tokenizer.eos_token_id,
-    )
-
-    story = story_results[0]["generated_text"]
+    """Generate a story from the image caption."""
+    story_generator = load_story_model()
+    story = story_generator(scenario)[0]["generated_text"]
     return make_story_short_enough(story, scenario)
 
 
