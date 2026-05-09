@@ -16,7 +16,7 @@ def load_img2text_model():
 @st.cache_resource
 def load_story_model():
     """Load the Hugging Face story generation model once."""
-    return pipeline("text-generation", model="roneneldan/TinyStories-Instruct-33M")
+    return pipeline("text-generation", model="pranavpsv/genre-story-generator-v2")
 
 
 @st.cache_resource
